@@ -1,0 +1,16 @@
+{
+  "severity": {
+    "model_name": "Ensemble 2 (RF+XGB+NN)",
+    "category": "Advanced Ensemble",
+    "f1_score": 0.927522353514518,
+    "accuracy": 0.927170868347339,
+    "model_path": "results/updated_advanced_hybrid/ensemble_2_(rf+xgb+nn)_severity_model.pkl"
+  },
+  "location": {
+    "model_name": "Random Forest",
+    "category": "Basic/Simple",
+    "f1_score": 0.7841809013640353,
+    "accuracy": 0.7815126050420168,
+    "model_path": "results/models/random_forest_location_model.pkl"
+  }
+}

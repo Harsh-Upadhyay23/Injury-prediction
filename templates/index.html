@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Injury Risk Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .risk-meter {
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(to right, green, yellow, red);
+            margin: 10px 0;
+            position: relative;
+        }
+        .risk-indicator {
+            width: 2px;
+            height: 30px;
+            background: black;
+            position: absolute;
+            top: -5px;
+        }
+        .collapsible {
+            cursor: pointer;
+            padding: 10px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            background-color: #f8f9fa;
+            margin: 5px 0;
+        }
+        .content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            background-color: #f8f9fa;
+        }
+        .info-icon {
+            color: #007bff;
+            cursor: help;
+            margin-left: 5px;
+            font-size: 14px;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #333 transparent transparent transparent;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Sports Injury Risk Predictor</h1>
+        
+        <form id="prediction-form" class="mb-4">
+            <div class="card mb-3">
+                <div class="card-header">Basic Information</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="age" class="form-label">
+                                    Age
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 12-18 years (Mean: 14.96)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="age" name="Age" required min="12" max="18" step="1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">Gender</label>
+                                <select class="form-control" id="gender" name="Gender" required>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Body Measurements</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="weight" class="form-label">
+                                    Weight (kg)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 34-73.3 kg (Mean: 49.68)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="weight" name="Weight (kg)" required min="34" max="73.3" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="height" class="form-label">
+                                    Height (m)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 1.3-1.9 m (Mean: 1.57)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="height" name="Height (m)" required min="1.3" max="1.9" step="0.01">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="bmi" class="form-label">BMI (calculated)</label>
+                                <input type="number" class="form-control" id="bmi" name="BMI" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="waist" class="form-label">
+                                    Waist Circumference (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 51.15-82.09 cm (Mean: 66.45)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="waist" name="Waist Circumference (cm)" min="51.15" max="82.09" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="hip" class="form-label">
+                                    Hip Circumference (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 63.2-100 cm (Mean: 82.88)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="hip" name="Hip Circumference (cm)" min="63.2" max="100" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="quad" class="form-label">
+                                    Quad Circumference (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 37-77 cm (Mean: 51.52)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="quad" name="Quad Circumference (cm)" min="37" max="77" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="calf" class="form-label">
+                                    Calf Circumference (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 25-46 cm (Mean: 32.81)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="calf" name="Calf Circumference (cm)" min="25" max="46" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="upper_arm" class="form-label">
+                                    Upper Arm Circumference (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 18-47 cm (Mean: 26.92)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="upper_arm" name="Upper Arm Circumference (cm)" min="18" max="47" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="wrist" class="form-label">
+                                    Wrist Circumference (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 10-26 cm (Mean: 15.91)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="wrist" name="Wrist Circumference (cm)" min="10" max="26" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="ankle" class="form-label">
+                                    Ankle Circumference (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 14-26 cm (Mean: 18.58)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="ankle" name="Ankle Circumference (cm)" min="14" max="26" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Physical Assessments</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="shoulder_flexion" class="form-label">
+                                    Shoulder Flexion (degrees)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 165-195° (Mean: 180.30)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="shoulder_flexion" name="Shoulder Flexion (deg)" min="165" max="195" step="1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="trunk_flexion" class="form-label">
+                                    Trunk Flexion (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: -4.9 to 15 cm (Mean: 5.00)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="trunk_flexion" name="Trunk Flexion (cm)" min="-4.9" max="15" step="0.1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="stick_test" class="form-label">
+                                    Stick Test (cm)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 5.1-44.9 cm (Mean: 24.99)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="stick_test" name="Stick Test (cm)" min="5.1" max="44.9" step="0.1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="strength_score" class="form-label">
+                                    Strength Score
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 1-5 (Mean: 3.06)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="strength_score" name="Strength Score" min="1" max="5" step="1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="endurance_score" class="form-label">
+                                    Endurance Score
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 1-5 (Mean: 3.10)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="endurance_score" name="Endurance Score" min="1" max="5" step="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Training Information</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="training_hrs" class="form-label">
+                                    Weekly Training Hours
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 4-12 hours (Mean: 8.01)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="training_hrs" name="Training hrs" required min="4" max="12" step="0.5">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="experience" class="form-label">
+                                    Years Experience
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 3-9 years (Mean: 5.96)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="experience" name="Experience" required min="3" max="9" step="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">Injury History</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="duration" class="form-label">
+                                    Injury Duration (days)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 0-462 days (Mean: 22.9)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="duration" name="Duration" required min="0" max="462" step="1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="injury_occurred" class="form-label">
+                                    Injury Occurred (weeks ago)
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 0-36 weeks (Mean: 9.09)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="injury_occurred" name="Injury Occurred (weeks ago)" min="0" max="36" step="1">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="discomfort" class="form-label">
+                                    Current Discomfort Level
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 0-10 (Mean: 5.0)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="discomfort" name="discomfort" required min="0" max="10" step="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="gym_safety" class="form-label">
+                                    Gym Safety Rating
+                                    <div class="tooltip">
+                                        <i class="bi bi-info-circle-fill info-icon"></i>
+                                        <span class="tooltiptext">Range: 1-5 (Mean: 3.38)</span>
+                                    </div>
+                                </label>
+                                <input type="number" class="form-control" id="gym_safety" name="Gym Safety" required min="1" max="5" step="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="collapsible btn btn-outline-primary mb-3" style="border-width: 2px; font-weight: 500;">Show Default Values Used in Prediction</button>
+            <div class="content">
+                <div class="card mb-3">
+                    <div class="card-header">Default Values (Used when fields are left empty)</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Body Measurements (Dataset Averages)</h6>
+                                <ul>
+                                    <li>Waist Circumference: 66.45 cm</li>
+                                    <li>Hip Circumference: 82.88 cm</li>
+                                    <li>Quad Circumference: 51.52 cm</li>
+                                    <li>Calf Circumference: 32.81 cm</li>
+                                    <li>Upper Arm Circumference: 26.92 cm</li>
+                                    <li>Wrist Circumference: 15.91 cm</li>
+                                    <li>Ankle Circumference: 18.58 cm</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Physical Assessments (Dataset Averages)</h6>
+                                <ul>
+                                    <li>Shoulder Flexion: 180.30°</li>
+                                    <li>Trunk Flexion: 5.00 cm</li>
+                                    <li>Stick Test: 24.99 cm</li>
+                                    <li>Strength Score: 3.06</li>
+                                    <li>Endurance Score: 3.10</li>
+                                    <li>Injury Occurred: 9.09 weeks ago</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mt-3">
+                            <strong>Note:</strong> Coach-related parameters (Coach, Coach Experience, Coach Certification, Coach Success Rate) are automatically set to dataset averages for model compatibility but are not shown as they don't significantly impact injury prediction.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Predict Risk</button>
+        </form>
+
+        <!-- Submit Athlete Data Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Submit Athlete Data</h4>
+            </div>
+            <div class="card-body">
+                <form id="submit-form" class="row g-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="athlete_name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="athlete_name" name="athlete_name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="athlete_age" class="form-label">Age</label>
+                            <input type="number" class="form-control" id="athlete_age" name="athlete_age" required min="12" max="18">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="athlete_gender" class="form-label">Gender</label>
+                            <select class="form-control" id="athlete_gender" name="athlete_gender" required>
+                                <option value="Male" selected>Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="athlete_sport" class="form-label">Sport</label>
+                            <input type="text" class="form-control" id="athlete_sport" name="athlete_sport" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="injury_duration_weeks" class="form-label">Injury Duration (weeks)</label>
+                            <input type="number" class="form-control" id="injury_duration_weeks" name="injury_duration_weeks" min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="injury_occurred_weeks" class="form-label">Injury Occurred (weeks ago)</label>
+                            <input type="number" class="form-control" id="injury_occurred_weeks" name="injury_occurred_weeks" min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="trunk_flexion_cm" class="form-label">Trunk Flexion (cm)</label>
+                            <input type="number" class="form-control" id="trunk_flexion_cm" name="trunk_flexion_cm" min="-4.9" max="15" step="0.1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="athlete_bmi" class="form-label">BMI</label>
+                            <input type="number" class="form-control" id="athlete_bmi" name="athlete_bmi" min="10" max="50" step="0.1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="weekly_training_hours" class="form-label">Weekly Training Hours</label>
+                            <input type="number" class="form-control" id="weekly_training_hours" name="weekly_training_hours" min="0" max="20" step="0.5">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="current_discomfort" class="form-label">Current discomfort / Injury</label>
+                            <input type="text" class="form-control" id="current_discomfort" name="current_discomfort">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="shoulder_flexion_deg" class="form-label">Shoulder Flexion (deg)</label>
+                            <input type="number" class="form-control" id="shoulder_flexion_deg" name="shoulder_flexion_deg" min="165" max="195" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="athlete_weight" class="form-label">Weight (kg)</label>
+                            <input type="number" class="form-control" id="athlete_weight" name="athlete_weight" min="30" max="100" step="0.1">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Injury Position</label>
+                            <input type="text" class="form-control" id="position" name="position">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-success btn-lg">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="results" style="display: none;">
+            <h3>Prediction Results</h3>
+            <div class="card">
+                <div class="card-body">
+                    <p><strong>Risk Score: </strong><span id="risk-score"></span></p>
+                    <div class="risk-meter">
+                        <div class="risk-indicator"></div>
+                    </div>
+                    <p><strong>Severity Level: </strong><span id="severity"></span></p>
+                    <p><strong>Likely Injury Location: </strong><span id="location"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Calculate BMI
+        function calculateBMI() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            if (weight && height) {
+                const bmi = weight / (height * height);
+                document.getElementById('bmi').value = bmi.toFixed(2);
+            }
+        }
+
+        // Add event listeners for BMI calculation
+        document.getElementById('weight').addEventListener('input', calculateBMI);
+        document.getElementById('height').addEventListener('input', calculateBMI);
+
+        // Handle form submission
+        document.getElementById('prediction-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                    return;
+                }
+
+                // Display results
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('risk-score').textContent = result.risk_score;
+                document.getElementById('severity').textContent = result.severity;
+                document.getElementById('location').textContent = result.location;
+
+                // Update risk meter
+                const indicator = document.querySelector('.risk-indicator');
+                indicator.style.left = `${result.risk_score}%`;
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Handle collapsible sections
+        var coll = document.getElementsByClassName("collapsible");
+        for (var i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var content = this.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+            });
+        }
+
+        // Handle submit form submission
+        document.getElementById('submit-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/submit_athlete_data', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Athlete data submitted successfully!');
+                    this.reset(); // Clear the form
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

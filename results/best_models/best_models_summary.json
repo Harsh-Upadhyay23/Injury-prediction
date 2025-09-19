@@ -1,0 +1,14 @@
+{
+  "severity_model": {
+    "name": "Ensemble 2 (RF+XGB+NN)",
+    "accuracy": 0.927170868347339,
+    "f1_score": 0.9275223535145181,
+    "model_path": "results/best_models/best_severity_model.pkl"
+  },
+  "location_model": {
+    "name": "Random Forest",
+    "accuracy": 0.7619047619047619,
+    "f1_score": 0.7647554072481823,
+    "model_path": "results/best_models/best_location_model.pkl"
+  }
+}

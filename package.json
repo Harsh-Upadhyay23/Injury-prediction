@@ -1,0 +1,23 @@
+{
+  "name": "injury_pred2-main",
+  "version": "1.0.0",
+  "description": "A web application that predicts the risk of sports injuries based on various factors. The application uses advanced machine learning models to predict both the location and severity of potential injuries.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "python app.py"
+
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tanzil-vcet/Final_Injury_pred.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Tanzil-vcet/Final_Injury_pred/issues"
+  },
+  "homepage": "https://github.com/Tanzil-vcet/Final_Injury_pred#readme"
+}
