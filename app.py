@@ -15,91 +15,82 @@ try:
     location_encoder = joblib.load('results/models/location_encoder.pkl')
 except FileNotFoundError:
     print("Error: Model files not found. Make sure the paths are correct.")
+    # You might want to handle this more gracefully
     severity_model = location_model = location_encoder = None
 
 @app.route('/')
 def home():
+    # Renders the initial form page
     return render_template('index.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    try:
-        # Step 1: Create a dictionary from the form data
-        # This uses the EXACT 'name' attributes from your index.html
-        form_data = request.form.to_dict()
-
-        # Step 2: Convert necessary fields from string to number
-        # Also handles cases where optional fields might be empty
-        numeric_features = {
-            'Age': float(form_data.get('Age', 0)),
-            'Weight (kg)': float(form_data.get('Weight (kg)', 0)),
-            'Height (m)': float(form_data.get('Height (m)', 0)),
-            'BMI': float(form_data.get('BMI', 0)),
-            'Waist Circumference (cm)': float(form_data.get('Waist Circumference (cm)', 66.45)),
-            'Hip Circumference (cm)': float(form_data.get('Hip Circumference (cm)', 82.88)),
-            'Quad Circumference (cm)': float(form_data.get('Quad Circumference (cm)', 51.52)),
-            'Calf Circumference (cm)': float(form_data.get('Calf Circumference (cm)', 32.81)),
-            'Upper Arm Circumference (cm)': float(form_data.get('Upper Arm Circumference (cm)', 26.92)),
-            'Wrist Circumference (cm)': float(form_data.get('Wrist Circumference (cm)', 15.91)),
-            'Ankle Circumference (cm)': float(form_data.get('Ankle Circumference (cm)', 18.58)),
-            'Shoulder Flexion (deg)': float(form_data.get('Shoulder Flexion (deg)', 180.30)),
-            'Trunk Flexion (cm)': float(form_data.get('Trunk Flexion (cm)', 5.00)),
-            'Stick Test (cm)': float(form_data.get('Stick Test (cm)', 24.99)),
-            'Strength Score': float(form_data.get('Strength Score', 3.06)),
-            'Endurance Score': float(form_data.get('Endurance Score', 3.10)),
-            'Training hrs': float(form_data.get('Training hrs', 0)),
-            'Experience': float(form_data.get('Experience', 0)),
-            'Duration': float(form_data.get('Duration', 0)),
-            'Injury Occurred (weeks ago)': float(form_data.get('Injury Occurred (weeks ago)', 9.09)),
-            'discomfort': float(form_data.get('discomfort', 0)),
-            'Gym Safety': float(form_data.get('Gym Safety', 0))
+    if request.method == 'POST':
+        # --- Collect all form data ---
+        form_data = {
+            'Age': int(request.form['age']),
+            'Gender': request.form['gender'],
+            'Sport': request.form['sport'],
+            'Weekly Training Hours': int(request.form['training_hours']),
+            'Years of Experience': int(request.form['experience']),
+            'Previous Injuries Count': int(request.form['previous_injuries']),
+            'Average Warm-up Time': int(request.form['warmup_time']),
+            'Rest Days per Week': int(request.form['rest_days'])
         }
 
-        # Add categorical feature
-        numeric_features['Gender'] = form_data.get('Gender', 'Male')
-
-        # Step 3: Create a DataFrame in the correct order for the model
-        # THIS ORDER MUST EXACTLY MATCH YOUR MODEL'S TRAINING DATA
-        feature_order = [
-            'Age', 'Gender', 'Weight (kg)', 'Height (m)', 'BMI',
-            'Waist Circumference (cm)', 'Hip Circumference (cm)',
-            'Quad Circumference (cm)', 'Calf Circumference (cm)',
-            'Upper Arm Circumference (cm)', 'Wrist Circumference (cm)',
-            'Ankle Circumference (cm)', 'Shoulder Flexion (deg)',
-            'Trunk Flexion (cm)', 'Stick Test (cm)', 'Strength Score',
-            'Endurance Score', 'Training hrs', 'Experience', 'Duration',
-            'Injury Occurred (weeks ago)', 'discomfort', 'Gym Safety'
+        # --- Create a DataFrame for prediction ---
+        # The order of columns must match the training data
+        feature_columns = [
+            'Age', 'Gender', 'Sport', 'Weekly Training Hours',
+            'Years of Experience', 'Previous Injuries Count',
+            'Average Warm-up Time', 'Rest Days per Week'
         ]
-        
-        input_df = pd.DataFrame([numeric_features], columns=feature_order)
+        input_df = pd.DataFrame([form_data], columns=feature_columns)
 
-        # Pre-processing (handle categorical data)
-        input_df['Gender'] = input_df['Gender'].apply(lambda x: 1 if x == 'Male' else 0)
+        # --- Preprocessing ---
+        # Convert categorical variables to numerical using one-hot encoding
+        input_df = pd.get_dummies(input_df, columns=['Gender', 'Sport'], drop_first=True)
+
+        # Align columns with the model's training columns
+        # This handles missing columns if a sport/gender wasn't in the form but was in training
+        # We'll create a dummy training columns list for this example
+        # In a real scenario, you'd save this from your training script
+        # NOTE: This is a simplified list. Ensure it matches your actual model's features.
+        training_cols = ['Age', 'Weekly Training Hours', 'Years of Experience',
+                         'Previous Injuries Count', 'Average Warm-up Time', 'Rest Days per Week',
+                         'Gender_Male', 'Sport_Basketball', 'Sport_Football',
+                         'Sport_Running', 'Sport_Soccer', 'Sport_Tennis'] # Example columns
+        
+        # Reindex the input dataframe to match the training columns
+        input_df_aligned = input_df.reindex(columns=training_cols, fill_value=0)
+
 
         # --- Make Predictions ---
-        severity_prediction = severity_model.predict(input_df)[0]
-        location_prediction_encoded = location_model.predict(input_df)[0]
+        severity_prediction = severity_model.predict(input_df_aligned)[0]
+        location_prediction_encoded = location_model.predict(input_df_aligned)[0]
+
+        # Decode the location prediction
         location_prediction = location_encoder.inverse_transform([location_prediction_encoded])[0]
 
-        # Calculate risk score (0-100 scale)
-        # Assuming severity is on a scale, e.g., 1-4. Adjust max_severity if different.
-        max_severity = 4 
-        risk_score = (severity_prediction / max_severity) * 100
+        # Calculate a risk score (example logic)
+        risk_score = (severity_prediction * 2.5) # Scale severity (0-4) to a 1-10 score
 
-        # Step 4: Return a JSON response
-        return jsonify({
-            'risk_score': round(risk_score, 2),
-            'severity': str(int(severity_prediction)), # Convert numpy int to standard int
-            'location': location_prediction
-        })
+        # --- Render results on the page ---
+        return render_template('index.html',
+                               location=location_prediction,
+                               severity=int(severity_prediction),
+                               risk=round(risk_score, 1),
+                               form_data=form_data) # Pass original data back to the form
 
-    except Exception as e:
-        # If any error occurs, return it as JSON
-        return jsonify({'error': str(e)}), 400
+    return render_template('index.html')
 
 @app.route('/submit', methods=['POST'])
 def submit():
+    """
+    This route handles the submission of actual injury data from the user.
+    """
     if request.method == 'POST':
+        # --- Collect the original input data passed through hidden fields ---
         original_data = {
             'Age': request.form['original_Age'],
             'Gender': request.form['original_Gender'],
@@ -110,34 +101,48 @@ def submit():
             'Average Warm-up Time': request.form['original_Average Warm-up Time'],
             'Rest Days per Week': request.form['original_Rest Days per Week']
         }
-
+        
+        # --- Collect the new, actual injury information ---
         injury_occurred = request.form.get('injury_occurred')
+        
+        # If an injury occurred, get the details. Otherwise, use placeholders.
         if injury_occurred == 'yes':
             actual_location = request.form['actual_location']
             actual_severity = request.form['actual_severity']
         else:
             actual_location = "No Injury"
-            actual_severity = 0
+            actual_severity = 0 # Assuming 0 means no injury
 
+        # --- Prepare the new row for the CSV ---
+        # The order must match your training data CSV for future retraining
         new_row = list(original_data.values()) + [actual_location, actual_severity]
-
+        
+        # --- Save the data to a CSV file ---
         file_path = os.path.join('data', 'new_data_to_add.csv')
+        
+        # Check if the file exists to determine if we need to write headers
         file_exists = os.path.isfile(file_path)
-
+        
         with open(file_path, 'a', newline='') as f:
             writer = csv.writer(f)
             if not file_exists:
+                # If file doesn't exist, write headers first
                 headers = list(original_data.keys()) + ['Injury Location', 'Injury Severity']
                 writer.writerow(headers)
             writer.writerow(new_row)
-
+            
+        # --- Render the page again with a success message ---
         return render_template('index.html', submission_success=True)
 
     return render_template('index.html')
 
 @app.route('/submit_athlete_data', methods=['POST'])
 def submit_athlete_data():
+    """
+    Handle submission of athlete data from the new submit form.
+    """
     try:
+        # Collect all form data
         athlete_data = {
             'Name': request.form.get('athlete_name', ''),
             'Age': request.form.get('athlete_age', ''),
@@ -154,27 +159,29 @@ def submit_athlete_data():
             'Position': request.form.get('position', ''),
             'Submission Date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
-
+        
+        # Validate required fields
         required_fields = ['Name', 'Age', 'Gender', 'Sport']
         for field in required_fields:
             if not athlete_data[field]:
                 return jsonify({'success': False, 'error': f'{field} is required'})
-
+        
+        # Save to CSV file
         file_path = os.path.join('data', 'athlete_submissions.csv')
         file_exists = os.path.isfile(file_path)
-
+        
         with open(file_path, 'a', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             if not file_exists:
+                # Write headers if file doesn't exist
                 writer.writerow(athlete_data.keys())
             writer.writerow(athlete_data.values())
-
+        
         return jsonify({'success': True, 'message': 'Athlete data submitted successfully'})
-
+        
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-# Render-ready startup
+
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(debug=True)
